@@ -21,6 +21,16 @@ public class User {
 
     private String phone;
 
+    /**
+     * 角色：ADMIN-医保办（可见全院任务） DEPT-科室人员（仅可见本人上传的批次）
+     */
+    private String role;
+
+    /**
+     * 科室名称
+     */
+    private String deptName;
+
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

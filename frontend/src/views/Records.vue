@@ -3,7 +3,9 @@
     <!-- 页面标题 -->
     <div class="card">
       <h1 class="text-2xl font-bold text-gray-800 mb-2">导入记录</h1>
-      <p class="text-gray-500">查看历史导入记录，管理数据上报</p>
+      <p class="text-gray-500">
+        {{ userStore.userInfo.role === 'ADMIN' ? '查看全院导入记录，管理数据上报' : '查看本科室上传的导入记录，管理数据上报' }}
+      </p>
     </div>
 
     <!-- 记录列表 -->

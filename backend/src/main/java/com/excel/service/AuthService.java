@@ -39,7 +39,9 @@ public class AuthService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
+        // 兼容历史数据：无角色时默认为科室人员
+        String role = user.getRole() != null ? user.getRole() : "DEPT";
+        String token = jwtUtils.generateToken(user.getId(), user.getUsername(), role);
 
         logger.info("用户 {} 登录成功", request.getUsername());
 
@@ -48,6 +50,8 @@ public class AuthService {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .realName(user.getRealName())
+                .role(role)
+                .deptName(user.getDeptName())
                 .build();
     }
 

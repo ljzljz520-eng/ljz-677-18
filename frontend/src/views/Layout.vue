@@ -37,6 +37,13 @@
                   {{ userStore.userInfo.realName?.charAt(0) || 'U' }}
                 </div>
                 <span class="ml-2 text-gray-700 hidden sm:block">{{ userStore.userInfo.realName }}</span>
+                <el-tag
+                  size="small"
+                  :type="userStore.userInfo.role === 'ADMIN' ? 'danger' : 'info'"
+                  class="ml-2 hidden sm:inline-flex"
+                >
+                  {{ userStore.userInfo.role === 'ADMIN' ? '医保办' : (userStore.userInfo.deptName || '科室') }}
+                </el-tag>
                 <el-icon class="ml-1"><ArrowDown /></el-icon>
               </div>
               <template #dropdown>

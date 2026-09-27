@@ -63,21 +63,23 @@ public class ExcelController {
     }
 
     @GetMapping("/records")
-    @Operation(summary = "获取导入记录", description = "分页获取导入记录列表")
+    @Operation(summary = "获取导入记录", description = "分页获取导入记录列表，医保办可见全院任务，科室人员仅可见本人上传的批次")
     public ApiResponse<Page<ImportRecord>> getImportRecords(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
+        // 数据范围由后端根据当前登录用户角色强制限定，前端不参与过滤
         Page<ImportRecord> page = excelImportService.getImportRecords(pageNum, pageSize);
         return ApiResponse.success(page);
     }
 
     @GetMapping("/data/{batchNo}")
-    @Operation(summary = "获取批次数据", description = "根据批次号分页获取数据")
+    @Operation(summary = "获取批次数据", description = "根据批次号分页获取数据，校验批次归属")
     public ApiResponse<Page<ExcelData>> getDataByBatch(
             @PathVariable String batchNo,
+            @RequestParam(required = false) Integer reportStatus,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<ExcelData> page = excelImportService.getDataByBatch(batchNo, pageNum, pageSize);
+        Page<ExcelData> page = excelImportService.getDataByBatch(batchNo, reportStatus, pageNum, pageSize);
         return ApiResponse.success(page);
     }
 
@@ -142,8 +144,9 @@ public class ExcelController {
     }
 
     @GetMapping("/export/errors/{batchNo}")
-    @Operation(summary = "导出错误数据", description = "导出上报失败的数据为Excel")
+    @Operation(summary = "导出错误数据", description = "导出上报失败的数据为Excel，遵守与查询相同的数据隔离规则")
     public void exportErrors(@PathVariable String batchNo, HttpServletResponse response) throws IOException {
+        // getFailedReportData 内部已校验批次归属，越权访问将返回403
         List<ExcelData> failedList = reportService.getFailedReportData(batchNo);
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

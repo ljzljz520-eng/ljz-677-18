@@ -27,6 +27,7 @@ public class ReportService {
     private static final Logger logger = LoggerFactory.getLogger(ReportService.class);
 
     private final ExcelDataMapper excelDataMapper;
+    private final DataScopeService dataScopeService;
 
     /**
      * 上报数据到国家平台
@@ -34,6 +35,8 @@ public class ReportService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ReportResultDTO reportToNationalPlatform(String batchNo) {
+        // 校验批次归属：科室人员只能上报本人上传的批次
+        dataScopeService.checkBatchAccess(batchNo);
         logger.info("开始上报数据到国家平台，批次号: {}", batchNo);
 
         // 获取待上报数据
@@ -158,8 +161,10 @@ public class ReportService {
 
     /**
      * 获取上报失败的数据
+     * 异常结果同样遵守数据隔离规则
      */
     public List<ExcelData> getFailedReportData(String batchNo) {
+        dataScopeService.checkBatchAccess(batchNo);
         return excelDataMapper.selectList(
                 new LambdaQueryWrapper<ExcelData>()
                         .eq(ExcelData::getBatchNo, batchNo)
@@ -172,6 +177,7 @@ public class ReportService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void resetFailedData(String batchNo) {
+        dataScopeService.checkBatchAccess(batchNo);
         excelDataMapper.update(null,
                 new LambdaUpdateWrapper<ExcelData>()
                         .eq(ExcelData::getBatchNo, batchNo)

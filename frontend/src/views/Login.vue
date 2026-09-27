@@ -55,13 +55,20 @@
       </el-form>
 
       <!-- 提示信息 -->
-      <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+      <div class="mt-6 p-4 bg-blue-50 rounded-lg space-y-1">
         <p class="text-sm text-gray-600 flex items-center">
           <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          测试账号：admin / admin123
+          医保办账号：admin / admin123（可看全院任务）
+        </p>
+        <p class="text-sm text-gray-600 flex items-center">
+          <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          科室账号：neike / 123456（内科）、waike / 123456（外科）
         </p>
       </div>
     </div>
@@ -106,7 +113,9 @@ const handleLogin = async () => {
     userStore.setUserInfo({
       userId: res.data.userId,
       username: res.data.username,
-      realName: res.data.realName
+      realName: res.data.realName,
+      role: res.data.role,
+      deptName: res.data.deptName
     })
     ElMessage.success('登录成功')
     router.push('/')

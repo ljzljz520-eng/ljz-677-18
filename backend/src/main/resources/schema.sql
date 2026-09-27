@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `real_name` VARCHAR(50) COMMENT '真实姓名',
     `email` VARCHAR(100) COMMENT '邮箱',
     `phone` VARCHAR(20) COMMENT '手机号',
+    `role` VARCHAR(20) NOT NULL DEFAULT 'DEPT' COMMENT '角色：ADMIN-医保办（可见全院） DEPT-科室人员（仅本人上传）',
+    `dept_name` VARCHAR(50) COMMENT '科室名称',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用 1-启用',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -57,5 +59,6 @@ CREATE TABLE IF NOT EXISTS `import_record` (
     UNIQUE KEY `uk_batch_no` (`batch_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='导入记录表';
 
--- 管理员用户由应用启动时通过 DataInitializer 自动创建
--- 账号: admin  密码: admin123
+-- 用户由应用启动时通过 DataInitializer 自动创建
+-- 医保办账号: admin / admin123（可见全院任务）
+-- 科室演示账号: neike / 123456（内科）、waike / 123456（外科），仅可见本人上传的批次

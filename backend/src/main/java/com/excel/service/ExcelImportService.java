@@ -34,6 +34,7 @@ public class ExcelImportService {
     private final ExcelDataMapper excelDataMapper;
     private final ImportRecordMapper importRecordMapper;
     private final UserMapper userMapper;
+    private final DataScopeService dataScopeService;
 
     /**
      * 导入Excel文件
@@ -117,22 +118,28 @@ public class ExcelImportService {
 
     /**
      * 获取导入记录列表
+     * 数据范围在后端强制限定：医保办可见全院任务，科室人员仅可见本人上传的批次
      */
     public Page<ImportRecord> getImportRecords(Integer pageNum, Integer pageSize) {
         Page<ImportRecord> page = new Page<>(pageNum, pageSize);
-        return importRecordMapper.selectPage(page,
-                new LambdaQueryWrapper<ImportRecord>()
-                        .orderByDesc(ImportRecord::getCreateTime));
+        LambdaQueryWrapper<ImportRecord> wrapper = new LambdaQueryWrapper<>();
+        // 数据范围隔离：医保办（ADMIN）看全院，科室人员（DEPT）只看本人上传的批次
+        dataScopeService.applyScope(wrapper);
+        wrapper.orderByDesc(ImportRecord::getCreateTime);
+        return importRecordMapper.selectPage(page, wrapper);
     }
 
     /**
      * 根据批次号获取数据
+     * 访问前校验批次归属，防止跨科室越权访问
      */
-    public Page<ExcelData> getDataByBatch(String batchNo, Integer pageNum, Integer pageSize) {
+    public Page<ExcelData> getDataByBatch(String batchNo, Integer reportStatus, Integer pageNum, Integer pageSize) {
+        dataScopeService.checkBatchAccess(batchNo);
         Page<ExcelData> page = new Page<>(pageNum, pageSize);
         return excelDataMapper.selectPage(page,
                 new LambdaQueryWrapper<ExcelData>()
                         .eq(ExcelData::getBatchNo, batchNo)
+                        .eq(reportStatus != null, ExcelData::getReportStatus, reportStatus)
                         .orderByAsc(ExcelData::getId));
     }
 

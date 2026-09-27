@@ -14,4 +14,14 @@ public class LoginResponse {
     private String username;
 
     private String realName;
+
+    /**
+     * 角色：ADMIN-医保办 DEPT-科室人员
+     */
+    private String role;
+
+    /**
+     * 科室名称
+     */
+    private String deptName;
 }
