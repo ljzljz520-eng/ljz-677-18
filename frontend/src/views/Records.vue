@@ -3,7 +3,9 @@
     <!-- 页面标题 -->
     <div class="card">
       <h1 class="text-2xl font-bold text-gray-800 mb-2">导入记录</h1>
-      <p class="text-gray-500">查看历史导入记录，管理数据上报</p>
+      <p class="text-gray-500">
+        {{ isAdmin ? '医保办视角：全院各科室的导入任务' : `仅显示本科室（${userStore.userInfo.deptName || '未分配科室'}）上传的导入批次` }}
+      </p>
     </div>
 
     <!-- 记录列表 -->
@@ -43,6 +45,11 @@
           </template>
         </el-table-column>
         <el-table-column prop="operatorName" label="操作人" width="100" />
+        <el-table-column prop="deptName" label="所属科室" width="110">
+          <template #default="{ row }">
+            {{ row.deptName || '医保办' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="导入时间" width="180">
           <template #default="{ row }">
             {{ formatTime(row.createTime) }}
@@ -150,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { excelApi } from '@/api'
@@ -158,6 +165,9 @@ import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 是否医保办（仅用于界面展示，数据范围由后端强制过滤）
+const isAdmin = computed(() => userStore.userInfo.role === 'ADMIN')
 
 const loading = ref(false)
 const records = ref([])

@@ -8,6 +8,8 @@ import com.excel.dto.ImportResultDTO;
 import com.excel.dto.ReportResultDTO;
 import com.excel.entity.ExcelData;
 import com.excel.entity.ImportRecord;
+import com.excel.security.LoginUser;
+import com.excel.security.SecurityUtils;
 import com.excel.service.ExcelImportService;
 import com.excel.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +18,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,8 +42,7 @@ public class ExcelController {
     @PostMapping("/import")
     @Operation(summary = "导入Excel", description = "上传Excel文件进行数据导入")
     public ApiResponse<ImportResultDTO> importExcel(
-            @RequestParam("file") MultipartFile file,
-            Authentication authentication) {
+            @RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
                 return ApiResponse.error("请选择要上传的文件");
@@ -53,7 +53,7 @@ public class ExcelController {
                 return ApiResponse.error("仅支持Excel文件（.xlsx或.xls）");
             }
 
-            Long userId = (Long) authentication.getPrincipal();
+            Long userId = SecurityUtils.requireLoginUser().getUserId();
             ImportResultDTO result = excelImportService.importExcel(file, userId);
             return ApiResponse.success("导入完成", result);
         } catch (Exception e) {
@@ -63,11 +63,13 @@ public class ExcelController {
     }
 
     @GetMapping("/records")
-    @Operation(summary = "获取导入记录", description = "分页获取导入记录列表")
+    @Operation(summary = "获取导入记录", description = "分页获取导入记录列表（医保办查看全院，科室仅本科室）")
     public ApiResponse<Page<ImportRecord>> getImportRecords(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<ImportRecord> page = excelImportService.getImportRecords(pageNum, pageSize);
+        // 数据范围由后端根据登录用户角色与科室强制过滤
+        LoginUser loginUser = SecurityUtils.requireLoginUser();
+        Page<ImportRecord> page = excelImportService.getImportRecords(pageNum, pageSize, loginUser);
         return ApiResponse.success(page);
     }
 
@@ -77,6 +79,7 @@ public class ExcelController {
             @PathVariable String batchNo,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
+        excelImportService.checkBatchAccess(batchNo, SecurityUtils.requireLoginUser());
         Page<ExcelData> page = excelImportService.getDataByBatch(batchNo, pageNum, pageSize);
         return ApiResponse.success(page);
     }
@@ -84,6 +87,7 @@ public class ExcelController {
     @PostMapping("/report/{batchNo}")
     @Operation(summary = "上报数据", description = "将指定批次数据上报到国家平台")
     public ApiResponse<ReportResultDTO> reportData(@PathVariable String batchNo) {
+        excelImportService.checkBatchAccess(batchNo, SecurityUtils.requireLoginUser());
         try {
             ReportResultDTO result = reportService.reportToNationalPlatform(batchNo);
             return ApiResponse.success("上报完成", result);
@@ -96,6 +100,7 @@ public class ExcelController {
     @GetMapping("/report/failed/{batchNo}")
     @Operation(summary = "获取上报失败数据", description = "获取指定批次上报失败的数据")
     public ApiResponse<List<ExcelData>> getFailedReportData(@PathVariable String batchNo) {
+        excelImportService.checkBatchAccess(batchNo, SecurityUtils.requireLoginUser());
         List<ExcelData> failedList = reportService.getFailedReportData(batchNo);
         return ApiResponse.success(failedList);
     }
@@ -103,6 +108,7 @@ public class ExcelController {
     @PostMapping("/report/retry/{batchNo}")
     @Operation(summary = "重试上报", description = "重新上报失败的数据")
     public ApiResponse<ReportResultDTO> retryReport(@PathVariable String batchNo) {
+        excelImportService.checkBatchAccess(batchNo, SecurityUtils.requireLoginUser());
         try {
             // 先重置失败数据状态
             reportService.resetFailedData(batchNo);
@@ -142,8 +148,10 @@ public class ExcelController {
     }
 
     @GetMapping("/export/errors/{batchNo}")
-    @Operation(summary = "导出错误数据", description = "导出上报失败的数据为Excel")
+    @Operation(summary = "导出错误数据", description = "导出上报失败的数据为Excel（遵守科室数据隔离）")
     public void exportErrors(@PathVariable String batchNo, HttpServletResponse response) throws IOException {
+        // 导出与查询遵守相同的数据范围规则
+        excelImportService.checkBatchAccess(batchNo, SecurityUtils.requireLoginUser());
         List<ExcelData> failedList = reportService.getFailedReportData(batchNo);
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

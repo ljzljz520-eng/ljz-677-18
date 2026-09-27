@@ -14,11 +14,14 @@ import com.excel.listener.ExcelDataListener;
 import com.excel.mapper.ExcelDataMapper;
 import com.excel.mapper.ImportRecordMapper;
 import com.excel.mapper.UserMapper;
+import com.excel.security.LoginUser;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -50,7 +53,7 @@ public class ExcelImportService {
         User operator = userMapper.selectById(operatorId);
         String operatorName = operator != null ? operator.getRealName() : "系统";
 
-        // 创建导入记录
+        // 创建导入记录（冗余上传人所属科室，作为数据隔离维度）
         ImportRecord record = new ImportRecord();
         record.setBatchNo(batchNo);
         record.setFileName(fileName);
@@ -58,6 +61,10 @@ public class ExcelImportService {
         record.setStatus(0);
         record.setOperatorId(operatorId);
         record.setOperatorName(operatorName);
+        if (operator != null) {
+            record.setDeptCode(operator.getDeptCode());
+            record.setDeptName(operator.getDeptName());
+        }
         importRecordMapper.insert(record);
 
         // 使用EasyExcel SAX模式解析，避免OOM
@@ -116,13 +123,44 @@ public class ExcelImportService {
     }
 
     /**
-     * 获取导入记录列表
+     * 获取导入记录列表（按登录用户数据范围过滤，后端强制隔离）
+     * 医保办（ADMIN）：全院任务；科室人员（DEPT）：仅本科室上传的批次
      */
-    public Page<ImportRecord> getImportRecords(Integer pageNum, Integer pageSize) {
+    public Page<ImportRecord> getImportRecords(Integer pageNum, Integer pageSize, LoginUser loginUser) {
         Page<ImportRecord> page = new Page<>(pageNum, pageSize);
-        return importRecordMapper.selectPage(page,
+        LambdaQueryWrapper<ImportRecord> wrapper = new LambdaQueryWrapper<>();
+
+        if (!loginUser.isAdmin()) {
+            // 科室用户：仅本科室数据；未分配科室时查不到任何数据（fail closed）
+            if (!StringUtils.hasText(loginUser.getDeptCode())) {
+                return page;
+            }
+            wrapper.eq(ImportRecord::getDeptCode, loginUser.getDeptCode());
+        }
+
+        wrapper.orderByDesc(ImportRecord::getCreateTime);
+        return importRecordMapper.selectPage(page, wrapper);
+    }
+
+    /**
+     * 校验当前用户是否有权访问指定批次，并返回批次记录。
+     * 科室用户越权访问其他科室批次时抛出 AccessDeniedException。
+     */
+    public ImportRecord checkBatchAccess(String batchNo, LoginUser loginUser) {
+        ImportRecord record = importRecordMapper.selectOne(
                 new LambdaQueryWrapper<ImportRecord>()
-                        .orderByDesc(ImportRecord::getCreateTime));
+                        .eq(ImportRecord::getBatchNo, batchNo)
+        );
+        if (record == null) {
+            throw new RuntimeException("批次不存在: " + batchNo);
+        }
+        if (!loginUser.isAdmin()
+                && !java.util.Objects.equals(record.getDeptCode(), loginUser.getDeptCode())) {
+            logger.warn("用户 {} 越权访问批次 {}（所属科室: {}）",
+                    loginUser.getUsername(), batchNo, record.getDeptCode());
+            throw new AccessDeniedException("无权访问其他科室的批次数据");
+        }
+        return record;
     }
 
     /**

@@ -26,10 +26,14 @@ public class JwtUtils {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(Long userId, String username) {
+    public String generateToken(Long userId, String username, String role, String deptCode) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        claims.put("role", role);
+        if (deptCode != null) {
+            claims.put("deptCode", deptCode);
+        }
 
         return Jwts.builder()
                 .claims(claims)
@@ -65,5 +69,21 @@ public class JwtUtils {
     public String getUsername(String token) {
         Claims claims = parseToken(token);
         return claims.getSubject();
+    }
+
+    /**
+     * 从令牌解析登录用户（含数据范围）。
+     * 旧版本令牌缺少角色声明时返回 null，调用方应视为未认证（需重新登录）。
+     */
+    public com.excel.security.LoginUser toLoginUser(String token) {
+        Claims claims = parseToken(token);
+        String role = claims.get("role", String.class);
+        if (role == null) {
+            return null;
+        }
+        Long userId = claims.get("userId", Long.class);
+        String username = claims.getSubject();
+        String deptCode = claims.get("deptCode", String.class);
+        return new com.excel.security.LoginUser(userId, username, role, deptCode);
     }
 }

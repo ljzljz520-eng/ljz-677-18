@@ -17,6 +17,21 @@ public class User {
 
     private String realName;
 
+    /**
+     * 角色：ADMIN-医保办（全院范围） DEPT-科室人员（仅本科室）
+     */
+    private String role;
+
+    /**
+     * 所属科室代码
+     */
+    private String deptCode;
+
+    /**
+     * 所属科室名称
+     */
+    private String deptName;
+
     private String email;
 
     private String phone;

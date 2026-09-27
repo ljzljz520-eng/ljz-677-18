@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
     `username` VARCHAR(50) NOT NULL COMMENT '用户名',
     `password` VARCHAR(100) NOT NULL COMMENT '密码（BCrypt加密）',
     `real_name` VARCHAR(50) COMMENT '真实姓名',
+    `role` VARCHAR(20) DEFAULT 'DEPT' COMMENT '角色：ADMIN-医保办（全院） DEPT-科室人员（本科室）',
+    `dept_code` VARCHAR(50) COMMENT '所属科室代码',
+    `dept_name` VARCHAR(100) COMMENT '所属科室名称',
     `email` VARCHAR(100) COMMENT '邮箱',
     `phone` VARCHAR(20) COMMENT '手机号',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用 1-启用',
@@ -50,12 +53,16 @@ CREATE TABLE IF NOT EXISTS `import_record` (
     `error_details` TEXT COMMENT '错误详情',
     `operator_id` BIGINT COMMENT '操作人ID',
     `operator_name` VARCHAR(50) COMMENT '操作人姓名',
+    `dept_code` VARCHAR(50) COMMENT '上传科室代码（数据隔离维度）',
+    `dept_name` VARCHAR(100) COMMENT '上传科室名称',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT DEFAULT 0 COMMENT '是否删除：0-否 1-是',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_batch_no` (`batch_no`)
+    UNIQUE KEY `uk_batch_no` (`batch_no`),
+    INDEX `idx_dept_code` (`dept_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='导入记录表';
 
--- 管理员用户由应用启动时通过 DataInitializer 自动创建
--- 账号: admin  密码: admin123
+-- 账号由应用启动时通过 DataInitializer 自动创建
+-- 医保办（全院范围）: admin / admin123
+-- 科室账号（仅本科室）: neike01 / neike123（内科）, waike01 / waike123（外科）

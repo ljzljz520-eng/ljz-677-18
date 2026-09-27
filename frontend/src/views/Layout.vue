@@ -36,7 +36,10 @@
                 <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {{ userStore.userInfo.realName?.charAt(0) || 'U' }}
                 </div>
-                <span class="ml-2 text-gray-700 hidden sm:block">{{ userStore.userInfo.realName }}</span>
+                <div class="ml-2 hidden sm:block text-left">
+                  <div class="text-gray-700 text-sm leading-tight">{{ userStore.userInfo.realName }}</div>
+                  <div class="text-xs text-gray-400 leading-tight">{{ scopeLabel }}</div>
+                </div>
                 <el-icon class="ml-1"><ArrowDown /></el-icon>
               </div>
               <template #dropdown>
@@ -107,6 +110,13 @@ const menuItems = [
   { path: '/import', name: '数据导入', icon: UploadIcon },
   { path: '/records', name: '导入记录', icon: ListIcon }
 ]
+
+// 数据范围标识：医保办查看全院，科室账号仅本科室（仅作展示，过滤由后端强制）
+const scopeLabel = computed(() => {
+  return userStore.userInfo.role === 'ADMIN'
+    ? '医保办 · 全院'
+    : (userStore.userInfo.deptName ? `${userStore.userInfo.deptName}` : '科室用户')
+})
 
 const isActive = (path) => {
   return route.path === path || route.path.startsWith(path + '/')

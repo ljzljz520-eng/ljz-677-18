@@ -106,7 +106,10 @@ const handleLogin = async () => {
     userStore.setUserInfo({
       userId: res.data.userId,
       username: res.data.username,
-      realName: res.data.realName
+      realName: res.data.realName,
+      role: res.data.role,
+      deptCode: res.data.deptCode,
+      deptName: res.data.deptName
     })
     ElMessage.success('登录成功')
     router.push('/')

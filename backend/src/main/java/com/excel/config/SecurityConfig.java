@@ -117,11 +117,13 @@ public class SecurityConfig {
 
                 // 验证token
                 if (token != null && jwtUtils.validateToken(token)) {
-                    Long userId = jwtUtils.getUserId(token);
-                    String username = jwtUtils.getUsername(token);
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // 解析登录用户（含角色与科室数据范围）；旧版token无角色声明时不予认证，需重新登录
+                    com.excel.security.LoginUser loginUser = jwtUtils.toLoginUser(token);
+                    if (loginUser != null) {
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(loginUser, null, Collections.emptyList());
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
 
                 filterChain.doFilter(request, response);

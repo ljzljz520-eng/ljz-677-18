@@ -62,6 +62,16 @@ public class ImportRecord {
      */
     private String operatorName;
 
+    /**
+     * 上传人所属科室代码（数据隔离维度，导入时冗余写入）
+     */
+    private String deptCode;
+
+    /**
+     * 上传人所属科室名称
+     */
+    private String deptName;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
